@@ -18,16 +18,24 @@ type Edge
 
 draw : Mesh -> List Shape
 draw m =
-        List.map
-                ( \edge -> ( polygon red ( vertices m.points edge ) ) )
+        ( List.map
+                ( \edge -> ( drawFace m.points edge ) )
                 m.shapes
+        ) |> List.concat
+
+drawFace : Array Vec2 -> Edge -> List Shape
+drawFace points edge =
+        List.map
+                (\(x, y) -> move x y ( circle black 2 ) )
+                ( vertices points edge )
+
 
 vertices : Array Vec2 -> Edge -> List ( Number, Number )
 vertices points edge =
         case edge of
                 ChainedEdge pointId next ->
                         ( coords pointId points ) :: ( vertices points next )
-                
+
                 LastEdge pointId ->
                         coords pointId points :: []
 
