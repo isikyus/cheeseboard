@@ -26,10 +26,24 @@ draw m =
 
 drawFace : Array Vec2 -> Edge -> List Shape
 drawFace points edge =
-        vertices points edge
-        |> loopedPairs
-        |> List.Nonempty.map line
+        ( List.Nonempty.append
+                ( vertices points edge
+                  |> loopedPairs
+                  |> List.Nonempty.map line
+                )
+                ( debugDots points edge )
+        )
         |> List.Nonempty.toList
+
+debugDots points edge =
+        ( vertices points edge
+          |> List.Nonempty.map
+                ( \(x, y) ->
+                        circle blue 2
+                        |> move x y
+                )
+        )
+
 
 -- Take a list [a, b, c, ..., z] and return a list of pairs [(a, b), (b, c), ... (z, a)]
 loopedPairs : List.Nonempty.Nonempty a -> List.Nonempty.Nonempty (a, a)
