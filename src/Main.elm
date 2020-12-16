@@ -1,8 +1,9 @@
 module Main exposing (main)
 
-import Playground exposing (..)
-import Math.Vector2 exposing (..)
 import Array exposing (Array)
+import List.Nonempty
+import Math.Vector2 exposing (..)
+import Playground exposing (..)
 
 main =
         picture ( draw mesh )
@@ -25,19 +26,74 @@ draw m =
 
 drawFace : Array Vec2 -> Edge -> List Shape
 drawFace points edge =
-        List.map
-                (\(x, y) -> move x y ( circle black 2 ) )
-                ( vertices points edge )
+        vertices points edge
+        |> loopedPairs
+        |> List.Nonempty.map line
+        |> List.Nonempty.toList
 
+-- Take a list [a, b, c, ..., z] and return a list of pairs [(a, b), (b, c), ... (z, a)]
+loopedPairs : List.Nonempty.Nonempty a -> List.Nonempty.Nonempty (a, a)
+loopedPairs list =
+        loopedPairsImpl
+                ( List.Nonempty.head list )
+                list
 
-vertices : Array Vec2 -> Edge -> List ( Number, Number )
+loopedPairsImpl : a -> List.Nonempty.Nonempty a -> List.Nonempty.Nonempty (a, a)
+loopedPairsImpl first ( List.Nonempty.Nonempty head tail ) =
+        case tail of
+                mid :: rest ->
+                        List.Nonempty.Nonempty
+                                ( head, mid )
+                                ( List.Nonempty.toList
+                                        ( loopedPairsImpl
+                                                first
+                                                ( List.Nonempty.Nonempty mid rest )
+                                        )
+                                )
+
+                [] ->
+                        List.Nonempty.Nonempty
+                                ( head, first )
+                                []
+
+line : ( ( Number, Number), ( Number, Number ) ) -> Shape
+line ( ( x1, y1 ), ( x2 , y2 ) ) =
+        let
+            length = Math.Vector2.distance
+                        ( vec2 x1 y1 )
+                        ( vec2 x2 y2 )
+
+            -- Playground.rotate rotates about the _centre_ of the shape, so I need to move the line
+            -- to the centre of the interval gap it goes in, rather than one end as you might expect.
+            lineCentreX = x1 + ( ( x2 - x1 ) / 2 )
+            lineCentreY = y1 + ( ( y2 - y1 ) / 2 )
+        in
+                ( rectangle black 1 length )
+                |> move lineCentreX lineCentreY
+                |> rotate
+                        ( 90
+                        + radiansToDegrees
+                                ( atan2 ( y2 - y1 ) ( x2 - x1 ) )
+                        )
+
+radiansToDegrees : Number -> Number
+radiansToDegrees theta =
+        -- Elm angle functions return radians, so ( degrees 1 ) is one degree's worth of radians,
+        -- and 1 radian ( radians 1 ) / ( degrees 1 ) is therefore one radian in degrees.
+        theta * ( radians 1 ) / ( degrees 1 )
+
+vertices : Array Vec2 -> Edge -> List.Nonempty.Nonempty ( Number, Number )
 vertices points edge =
         case edge of
                 ChainedEdge pointId next ->
-                        ( coords pointId points ) :: ( vertices points next )
+                        List.Nonempty.Nonempty
+                                ( coords pointId points )
+                                ( vertices points next |> List.Nonempty.toList )
 
                 LastEdge pointId ->
-                        coords pointId points :: []
+                        List.Nonempty.Nonempty
+                                ( coords pointId points )
+                                []
 
 coords : Int -> Array Vec2 -> ( Number, Number )
 coords pointId points =
