@@ -7,7 +7,8 @@ import Playground exposing (..)
 import Mesh
 
 main =
-        picture ( draw Mesh.testMesh )
+        picture
+                ( draw ( Mesh.rectangle 100 200 ) )
 
 draw : Mesh.Mesh -> List Shape
 draw m =

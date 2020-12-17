@@ -1,4 +1,4 @@
-module Mesh exposing (Mesh, Edge, testMesh, vertices, edgeCoords)
+module Mesh exposing (Mesh, Edge, rectangle, vertices, edgeCoords)
 
 import Array exposing (Array)
 import List.Nonempty
@@ -12,6 +12,20 @@ type alias Mesh =
 type Edge
         = ChainedEdge Int Edge
         | LastEdge Int
+
+rectangle : Float -> Float -> Mesh
+rectangle width height =
+        { points =
+                Array.fromList
+                        [ vec2 0.0 0.0
+                        , vec2 width 0.0
+                        , vec2 width height
+                        , vec2 0.0 height
+                        ]
+        , shapes =
+                [ ChainedEdge 1 ( ChainedEdge 2 ( ChainedEdge 3 ( LastEdge 4 ) ) )
+                ]
+        }
 
 edgeCoords : Edge -> Mesh -> List.Nonempty.Nonempty ( ( Float, Float ), ( Float, Float ) )
 edgeCoords edge mesh =
@@ -70,14 +84,3 @@ coords pointId points =
             ( getX point
             , getY point
             )
-
-testMesh =
-        { points =
-                Array.fromList
-                        [ vec2 10.0 20.0
-                        , vec2 20.0 30.0
-                        , vec2 0.0 20.5
-                        ]
-        , shapes =
-                [ ChainedEdge 1 ( ChainedEdge 2 ( LastEdge 3 ) ) ]
-        }
