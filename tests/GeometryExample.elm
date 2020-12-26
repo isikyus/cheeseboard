@@ -65,7 +65,8 @@ notNothing expectation maybe =
       expectation a
 
     Nothing ->
-      Expect.fail "Expected Just <something> but got Nothing"
+      Expect.fail
+        ( "Expected Just " ++ ( Debug.toString expectation ) ++  " but got Nothing" )
 
 -- The actual Elm geometry package seems to think this is a reasonable value.
 defaultTolerance : Expect.FloatingPointTolerance

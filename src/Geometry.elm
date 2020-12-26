@@ -26,6 +26,16 @@ extendSegment : Segment -> Line
 extendSegment ( SegmentBetween a b ) =
   lineFromPoints a b
 
+-- Like normal division, but return Nothing rather than dividing by zero.
+maybeQuotient : Float -> Float -> Maybe Float
+maybeQuotient dividend divisor =
+  if
+    divisor == 0.0
+  then
+    Nothing
+  else
+    Just ( dividend / divisor )
+
 -- TODO: enforce that the line and segment each have nonzero length.
 intersectLineWithSegment : Line -> Segment -> Maybe Vec2
 intersectLineWithSegment ( LineFromPoints linePointA linePointB ) ( SegmentBetween segmentStart segmentEnd ) =
@@ -34,12 +44,15 @@ intersectLineWithSegment ( LineFromPoints linePointA linePointB ) ( SegmentBetwe
                 lineCoefficient = ccw90Degrees alongLine
                 alongSegment = sub segmentEnd segmentStart
                 betweenStarts = sub linePointA segmentStart
-                positionInSegment = ( dot lineCoefficient betweenStarts ) / ( dot lineCoefficient alongSegment )
+                positionInSegment =
+                  maybeQuotient
+                    ( dot lineCoefficient betweenStarts )
+                    ( dot lineCoefficient alongSegment )
         in
-          -- TODO: should use a division that returns Nothing on division by zero.
-          -- TODO: only return points actually on the segment
-          Just ( add segmentStart ( scale positionInSegment alongSegment ) )
-
+          Maybe.map
+            -- TODO: only return points actually on the segment
+            ( \pos -> add segmentStart ( scale pos alongSegment ) )
+            positionInSegment
 
 ccw90Degrees : Vec2 -> Vec2
 ccw90Degrees v =
