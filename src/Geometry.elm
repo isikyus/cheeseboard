@@ -22,9 +22,37 @@ segmentBetween : Vec2 -> Vec2 -> Segment
 segmentBetween a b =
   SegmentBetween a b
 
+segmentStart : Segment -> Vec2
+segmentStart ( SegmentBetween start end ) =
+  start
+
+segmentEnd : Segment -> Vec2
+segmentEnd ( SegmentBetween start end ) =
+  end
+
+-- A vector "along" the given segment, from start to end.
+alongSegment : Segment -> Vec2
+alongSegment ( SegmentBetween start end ) =
+  sub end start
+
 extendSegment : Segment -> Line
-extendSegment ( SegmentBetween a b ) =
-  lineFromPoints a b
+extendSegment ( SegmentBetween start end ) =
+  lineFromPoints start end
+
+-- Finds the point a given distance along the segment, where the segment start is 0.0 and end is 1.0
+-- Not defined for points outside that range.
+pointInSegment : Float -> Segment -> Maybe Vec2
+pointInSegment distance segment =
+  if
+    0.0 <= distance && distance <= 1.0
+  then
+    Just
+      ( add
+        ( segmentStart segment )
+        ( scale distance ( alongSegment segment ) )
+      )
+  else
+    Nothing
 
 -- Like normal division, but return Nothing rather than dividing by zero.
 maybeQuotient : Float -> Float -> Maybe Float
@@ -38,21 +66,17 @@ maybeQuotient dividend divisor =
 
 -- TODO: enforce that the line and segment each have nonzero length.
 intersectLineWithSegment : Line -> Segment -> Maybe Vec2
-intersectLineWithSegment ( LineFromPoints linePointA linePointB ) ( SegmentBetween segmentStart segmentEnd ) =
+intersectLineWithSegment ( LineFromPoints linePointA linePointB ) segment =
         let
                 alongLine = sub linePointB linePointA
                 lineCoefficient = ccw90Degrees alongLine
-                alongSegment = sub segmentEnd segmentStart
-                betweenStarts = sub linePointA segmentStart
-                positionInSegment =
-                  maybeQuotient
-                    ( dot lineCoefficient betweenStarts )
-                    ( dot lineCoefficient alongSegment )
+                betweenStarts = sub linePointA ( segmentStart segment )
         in
-          Maybe.map
-            -- TODO: only return points actually on the segment
-            ( \pos -> add segmentStart ( scale pos alongSegment ) )
-            positionInSegment
+            maybeQuotient
+              ( dot lineCoefficient betweenStarts )
+              ( dot lineCoefficient ( alongSegment segment ) )
+            |> Maybe.andThen
+              ( \pos -> pointInSegment pos segment )
 
 ccw90Degrees : Vec2 -> Vec2
 ccw90Degrees v =
